@@ -23,16 +23,12 @@ namespace NXDSteamPlugin
         public override string IconPath => "steam.png";
 
         private ModalService modalService { get; } = new();
-
         private ArtworkService artworkService { get; } = new();
-
         private StartEntryService startEntryService { get; } = new();
-
         private SteamAuthService steamAuthService { get; } = new();
-
+        private StartClientService startClientService { get; } = new();
         private SteamOwnedGamesService steamOwnedGamesService => new(steamAuthService);
         private InstallEntryService installEntryService { get; } = new();
-
         private UninstallEntryService uninstallEntryService { get; } = new();
 
         public override async UniTask<ArtworkCollection> GetArtworkCollection(string entryId, CancellationToken cancellationToken)
@@ -73,6 +69,13 @@ namespace NXDSteamPlugin
         public override UniTask<GameActionResult> TryUninstallEntryAsync(LibraryEntry entry, CancellationToken cancellationToken)
         {
             return UniTask.FromResult(uninstallEntryService.UninstallEntry(this, entry, cancellationToken));
+        }
+
+        public override UniTask OpenLibraryApplication(LibraryLocation location)
+        {
+            Debug.Log("Opening Steam at " + location);
+            startClientService.StartClient(location);
+            return UniTask.CompletedTask;
         }
 
         public override List<LibraryPluginButton> GetButtons()
