@@ -12,7 +12,11 @@
         "LibraryPlugin.dll",
         "QRCoder.dll",
         "Newtonsoft.Json.dll",
-        "QRCoder.Unity.dll"
+        "QRCoder.Unity.dll",
+        "protobuf-net.Core.dll",
+        "protobuf-net.dll",
+        "System.Collections.Immutable.dll",
+        "System.Runtime.CompilerServices.Unsafe.dll"
     ],
     "autoReferenced": true,
     "defineConstraints": [],

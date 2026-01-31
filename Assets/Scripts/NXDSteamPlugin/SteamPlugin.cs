@@ -93,6 +93,12 @@ namespace NXDSteamPlugin
                 {
                     Name = "Authenticated: " + result.Username,
                 });
+            
+            list.Add(new LibraryPluginButton()
+            {
+                Name = "Refresh Auth",
+                Action = RefreshAuth
+            });
 
             return list;
         }
@@ -149,6 +155,13 @@ namespace NXDSteamPlugin
             steamAuthService.SaveToken(token);
 
             modalService.CloseModal(id);
+        }
+
+        private async UniTask RefreshAuth(CancellationToken cancellationToken)
+        {
+            var result = steamAuthService.LoadValidToken();
+            result = await steamAuthService.RefreshTokenAsync(result, cancellationToken);
+            steamAuthService.SaveToken(result);
         }
         
         private void UpdateQRCodeImage(RawImage imageComponent, string url)
