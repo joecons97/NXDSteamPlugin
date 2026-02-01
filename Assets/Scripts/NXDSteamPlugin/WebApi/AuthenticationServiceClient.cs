@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Newtonsoft.Json;
 using NXDSteamPlugin.Generated;
 using NXDSteamPlugin.Services;
 using NXDSteamPlugin.WebApi.AuthenticationService;
@@ -14,12 +12,6 @@ using UnityEngine.Networking;
 
 namespace NXDSteamPlugin.WebApi
 {
-    [System.Serializable]
-    public class ProtobufResponseWrapper
-    {
-        public string response;
-    }
-
     public class AuthenticationServiceClient
     {
         private const string USER_AGENT = "okhttp/4.9.2";
@@ -48,12 +40,7 @@ namespace NXDSteamPlugin.WebApi
                 protobufData = stream.ToArray();
             }
 
-            // Debug output
-            Debug.Log($"Protobuf bytes: {BitConverter.ToString(protobufData)}");
-            Debug.Log($"Protobuf length: {protobufData.Length}");
-
             string base64Data = Convert.ToBase64String(protobufData);
-            Debug.Log($"Base64: {base64Data}");
 
             // Create the web request
             WWWForm form = new WWWForm();
@@ -95,12 +82,7 @@ namespace NXDSteamPlugin.WebApi
                 protobufData = stream.ToArray();
             }
 
-            // Debug output
-            Debug.Log($"Protobuf bytes: {BitConverter.ToString(protobufData)}");
-            Debug.Log($"Protobuf length: {protobufData.Length}");
-
             string base64Data = Convert.ToBase64String(protobufData);
-            Debug.Log($"Base64: {base64Data}");
 
             // Create the web request
             WWWForm form = new WWWForm();
@@ -121,6 +103,7 @@ namespace NXDSteamPlugin.WebApi
                 {
                     AccountName = response.account_name,
                     AccessToken = response.access_token,
+                    RefreshToken = response.refresh_token,
                     NewChallengeUrl = response.new_challenge_url,
                     NewClientId = response.new_client_id,
                     HadRemoteInteraction = response.had_remote_interaction
@@ -148,12 +131,7 @@ namespace NXDSteamPlugin.WebApi
                 protobufData = stream.ToArray();
             }
 
-            // Debug output
-            Debug.Log($"Protobuf bytes: {BitConverter.ToString(protobufData)}");
-            Debug.Log($"Protobuf length: {protobufData.Length}");
-
             string base64Data = Convert.ToBase64String(protobufData);
-            Debug.Log($"Base64: {base64Data}");
 
             // Create the web request
             WWWForm form = new WWWForm();

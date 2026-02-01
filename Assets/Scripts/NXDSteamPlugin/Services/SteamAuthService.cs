@@ -68,7 +68,7 @@ namespace NXDSteamPlugin.Services
                 var pollResponse = await authenticationServiceClient.PollAuthSessionStatusAsync(beginLoginResponse.Response.ClientId, beginLoginResponse.Response.RequestId, cancellationToken);
                 if (string.IsNullOrEmpty(pollResponse.Response.AccessToken) == false)
                 {
-                    tokenResponse = new SteamToken(pollResponse.Response.AccessToken, pollResponse.Response.AccessToken, pollResponse.Response.AccountName);
+                    tokenResponse = new SteamToken(pollResponse.Response.RefreshToken, pollResponse.Response.AccessToken, pollResponse.Response.AccountName);
 
                     break;
                 }

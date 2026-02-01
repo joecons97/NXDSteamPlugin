@@ -31,6 +31,13 @@ namespace NXDSteamPlugin
         private InstallEntryService installEntryService { get; } = new();
         private UninstallEntryService uninstallEntryService { get; } = new();
 
+        public SteamPlugin()
+        {
+            RefreshAuth(CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
+        }
+
         public override async UniTask<ArtworkCollection> GetArtworkCollection(string entryId, CancellationToken cancellationToken)
         {
             var collection = await artworkService.GetArtworkAsync(entryId, cancellationToken);
@@ -94,12 +101,6 @@ namespace NXDSteamPlugin
                     Name = "Authenticated: " + result.Username,
                 });
             
-            list.Add(new LibraryPluginButton()
-            {
-                Name = "Refresh Auth",
-                Action = RefreshAuth
-            });
-
             return list;
         }
 
