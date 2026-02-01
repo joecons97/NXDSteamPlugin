@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
@@ -11,10 +12,40 @@ namespace NXDSteamPlugin.Services
 {
     public class SteamToken
     {
-        public string RefreshToken { get; set; }
-        public string AccessToken { get; set; }
-        public string SteamId { get; set; }
-        public string Username { get; set; }
+        public string RefreshToken { get; }
+        public string AccessToken { get; }
+        public string SteamId { get; }
+        public string Username { get; }
+        
+        public SteamToken() { }
+
+        public SteamToken(string refreshToken, string accessToken, string username)
+        {
+            RefreshToken = refreshToken;
+            AccessToken = accessToken;
+            Username = username;
+            
+            var payload = JObject.Parse(GetPayload());
+            SteamId = payload["sub"].Value<string>();
+        }
+        
+        public string GetPayload()
+        {
+            var encodedPayload = AccessToken.Split('.')[1];
+
+            //Convert from bs jwt base64 to actual base64
+            encodedPayload = encodedPayload.Replace('-', '+').Replace('_', '/');
+
+            // Add padding if needed
+            switch (encodedPayload.Length % 4)
+            {
+                case 2: encodedPayload += "=="; break;
+                case 3: encodedPayload += "="; break;
+            }
+
+            byte[] data = Convert.FromBase64String(encodedPayload);
+            return System.Text.Encoding.UTF8.GetString(data);
+        }
     }
 
     public class SteamAuthService
@@ -30,25 +61,23 @@ namespace NXDSteamPlugin.Services
 
         public async UniTask<SteamToken> AwaitLoginCompletionAsync(BeginAuthSessionViaQRResponse beginLoginResponse, Action<PollAuthSessionStatusResponse> onNewChallengeReceived, CancellationToken cancellationToken = default)
         {
-            var tokenResponse = new SteamToken();
+            SteamToken tokenResponse = null;
 
             while (cancellationToken.IsCancellationRequested == false)
             {
-                await UniTask.WaitForSeconds(beginLoginResponse.Response.Interval, cancellationToken: cancellationToken);
+                await UniTask.WaitForSeconds(beginLoginResponse.Interval, cancellationToken: cancellationToken);
 
-                var pollResponse = await authenticationServiceClient.PollAuthSessionStatusAsync(beginLoginResponse.Response.ClientId, beginLoginResponse.Response.RequestId, cancellationToken);
-                if (string.IsNullOrEmpty(pollResponse.Response.AccessToken) == false)
+                var pollResponse = await authenticationServiceClient.PollAuthSessionStatusAsync(beginLoginResponse.ClientId, beginLoginResponse.RequestId, cancellationToken);
+                if (string.IsNullOrEmpty(pollResponse.AccessToken) == false)
                 {
-                    tokenResponse.AccessToken = pollResponse.Response.AccessToken;
-                    tokenResponse.RefreshToken = pollResponse.Response.RefreshToken;
-                    tokenResponse.Username = pollResponse.Response.AccountName;
+                    tokenResponse = new SteamToken(pollResponse.RefreshToken, pollResponse.AccessToken, pollResponse.AccountName);
 
                     break;
                 }
-                else if (string.IsNullOrEmpty(pollResponse.Response.NewChallengeUrl) == false)
+                else if (string.IsNullOrEmpty(pollResponse.NewChallengeUrl) == false)
                 {
-                    beginLoginResponse.Response.ChallengeUrl = pollResponse.Response.NewChallengeUrl;
-                    beginLoginResponse.Response.ClientId = pollResponse.Response.NewClientId;
+                    beginLoginResponse.ChallengeUrl = pollResponse.NewChallengeUrl;
+                    beginLoginResponse.ClientId = pollResponse.NewClientId;
                     onNewChallengeReceived?.Invoke(pollResponse);
                 }
             }
@@ -56,54 +85,55 @@ namespace NXDSteamPlugin.Services
             return tokenResponse;
         }
         
+        public async UniTask<SteamToken> RefreshTokenAsync(SteamToken token, CancellationToken cancellationToken = default)
+        {
+            var newToken = await authenticationServiceClient.GenerateAccessTokenForAppAsync(token, cancellationToken);
+            return newToken;
+        }
+        
         public void SaveToken(SteamToken token)
         {
-            var payload = JObject.Parse(GetPayload(token.AccessToken));
-            var id = payload["sub"].Value<string>();
-
-            token.SteamId = id;
-
+            if(token == null) return;
+            
             var json = JsonConvert.SerializeObject(token);
-            PlayerPrefs.SetString("SteamToken", json);
+            var path = Application.persistentDataPath + "/steam_token.json";
+            
+            if(Directory.Exists(Application.persistentDataPath) == false) 
+                Directory.CreateDirectory(Application.persistentDataPath);
+            
+            File.WriteAllText(path, json);
         }
 
         public SteamToken LoadValidToken()
         {
-            if(PlayerPrefs.HasKey("SteamToken") == false) return null;
+            var path = Application.persistentDataPath + "/steam_token.json";
+            if(File.Exists(path) == false) return null;
 
-            var json = PlayerPrefs.GetString("SteamToken");
-            var token = JsonConvert.DeserializeObject<SteamToken>(json);
-
-            var payload = JObject.Parse(GetPayload(token.AccessToken));
-            var exp = payload["exp"].Value<long>();
-
-            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-            if (now > exp)
+            try
             {
-                Debug.LogWarning("Access Token is expired but no refresh implemented");
+                var json = File.ReadAllText(path);
+                var token = JsonConvert.DeserializeObject<SteamToken>(json);
+                if (token == null)
+                    return null;
+
+                var payload = JObject.Parse(token.GetPayload());
+                var exp = payload["exp"].Value<long>();
+
+                var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+                if (now > exp)
+                {
+                    Debug.LogWarning("Access Token is expired but it should have already been refreshed!");
+                    return null;
+                }
+
+                return token;
+            }
+            catch
+            {
                 return null;
             }
-
-            return token;
         }
 
-        private string GetPayload(string jwt)
-        {
-            var encodedPayload = jwt.Split('.')[1];
-
-            //Convert from bs jwt base64 to actual base64
-            encodedPayload = encodedPayload.Replace('-', '+').Replace('_', '/');
-
-            // Add padding if needed
-            switch (encodedPayload.Length % 4)
-            {
-                case 2: encodedPayload += "=="; break;
-                case 3: encodedPayload += "="; break;
-            }
-
-            byte[] data = Convert.FromBase64String(encodedPayload);
-            return System.Text.Encoding.UTF8.GetString(data);
-        }
     }
 }

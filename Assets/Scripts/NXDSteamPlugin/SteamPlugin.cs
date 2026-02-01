@@ -31,6 +31,13 @@ namespace NXDSteamPlugin
         private InstallEntryService installEntryService { get; } = new();
         private UninstallEntryService uninstallEntryService { get; } = new();
 
+        public SteamPlugin()
+        {
+            RefreshAuth(CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
+        }
+
         public override async UniTask<ArtworkCollection> GetArtworkCollection(string entryId, CancellationToken cancellationToken)
         {
             var collection = await artworkService.GetArtworkAsync(entryId, cancellationToken);
@@ -93,7 +100,7 @@ namespace NXDSteamPlugin
                 {
                     Name = "Authenticated: " + result.Username,
                 });
-
+            
             return list;
         }
 
@@ -115,7 +122,8 @@ namespace NXDSteamPlugin
             var text = textObj.GetComponent<Text>();
             text.font = Resources.Load<Font>("NXD");
             text.fontSize = 26;
-            text.text = "Please can the QR below to authenticate:";
+            text.supportRichText = true;
+            text.text = $"WARNING: Steam will display this login as the following:\n<b>\"Mobile Device - NXD-{SystemInfo.deviceName}\".</b>\n\nPlease scan the QR below to authenticate:";
 
             var qrCodeObj = new GameObject("QRCode", typeof(RectTransform), typeof(RawImage), typeof(LayoutElement), typeof(AspectRatioFitter));
             qrCodeObj.transform.SetParent(root.transform, false);
@@ -125,7 +133,7 @@ namespace NXDSteamPlugin
             qrCodeObj.GetComponent<LayoutElement>().preferredHeight = 256;
             qrCodeObj.GetComponent<LayoutElement>().preferredWidth = 256;
 
-            UpdateQRCodeImage(qrCode, beginResult.Response.ChallengeUrl);
+            UpdateQRCodeImage(qrCode, beginResult.ChallengeUrl);
 
             var id = modalService.CreateModal(new CreateModalArgs()
             {
@@ -139,9 +147,9 @@ namespace NXDSteamPlugin
                 closureCancellationToken.Cancel();
             });
 
-            Debug.Log(beginResult.Response.ChallengeUrl);
+            Debug.Log(beginResult.ChallengeUrl);
 
-            var token = await steamAuthService.AwaitLoginCompletionAsync(beginResult, (x) => UpdateQRCodeImage(qrCode, x.Response.NewChallengeUrl), cancellationToken);
+            var token = await steamAuthService.AwaitLoginCompletionAsync(beginResult, (x) => UpdateQRCodeImage(qrCode, x.NewChallengeUrl), cancellationToken);
 
             Debug.Log("Authenticated!");
             Debug.Log(token.AccessToken);
@@ -149,6 +157,19 @@ namespace NXDSteamPlugin
             steamAuthService.SaveToken(token);
 
             modalService.CloseModal(id);
+        }
+
+        private async UniTask RefreshAuth(CancellationToken cancellationToken)
+        {
+            var result = steamAuthService.LoadValidToken();
+            if (result == null)
+                return;
+            
+            result = await steamAuthService.RefreshTokenAsync(result, cancellationToken);
+            if (result == null)
+                return;
+            
+            steamAuthService.SaveToken(result);
         }
         
         private void UpdateQRCodeImage(RawImage imageComponent, string url)
