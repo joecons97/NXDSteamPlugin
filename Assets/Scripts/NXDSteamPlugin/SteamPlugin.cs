@@ -123,7 +123,7 @@ namespace NXDSteamPlugin
             text.font = Resources.Load<Font>("NXD");
             text.fontSize = 26;
             text.supportRichText = true;
-            text.text = $"WARNING: Steam will display this login as the following:\n<b>\"Mobile Device - NXD-{SystemInfo.deviceName}\".</b>\n\nPlease can the QR below to authenticate:";
+            text.text = $"WARNING: Steam will display this login as the following:\n<b>\"Mobile Device - NXD-{SystemInfo.deviceName}\".</b>\n\nPlease scan the QR below to authenticate:";
 
             var qrCodeObj = new GameObject("QRCode", typeof(RectTransform), typeof(RawImage), typeof(LayoutElement), typeof(AspectRatioFitter));
             qrCodeObj.transform.SetParent(root.transform, false);
