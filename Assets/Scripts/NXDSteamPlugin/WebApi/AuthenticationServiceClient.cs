@@ -56,14 +56,11 @@ namespace NXDSteamPlugin.WebApi
             var response = Serializer.Deserialize<CAuthentication_BeginAuthSessionViaQR_Response>(request.downloadHandler.data.AsSpan());
             return new BeginAuthSessionViaQRResponse()
             {
-                Response = new BeginAuthSessionViaQRResponse.ResponseData()
-                {
-                    ChallengeUrl = response.challenge_url,
-                    ClientId = response.client_id,
-                    RequestId = response.request_id,
-                    Interval = response.interval,
-                    Version = response.version
-                }
+                ChallengeUrl = response.challenge_url,
+                ClientId = response.client_id,
+                RequestId = response.request_id,
+                Interval = response.interval,
+                Version = response.version
             };
         }
 
@@ -99,15 +96,12 @@ namespace NXDSteamPlugin.WebApi
             
             return new PollAuthSessionStatusResponse()
             {
-                Response = new PollAuthSessionStatusResponse.ResponseData()
-                {
-                    AccountName = response.account_name,
-                    AccessToken = response.access_token,
-                    RefreshToken = response.refresh_token,
-                    NewChallengeUrl = response.new_challenge_url,
-                    NewClientId = response.new_client_id,
-                    HadRemoteInteraction = response.had_remote_interaction
-                }
+                AccountName = response.account_name,
+                AccessToken = response.access_token,
+                RefreshToken = response.refresh_token,
+                NewChallengeUrl = response.new_challenge_url,
+                NewClientId = response.new_client_id,
+                HadRemoteInteraction = response.had_remote_interaction
             };
         }
         
@@ -157,8 +151,9 @@ namespace NXDSteamPlugin.WebApi
                 var response = Serializer.Deserialize<CAuthentication_AccessToken_GenerateForApp_Response>(webRequest.downloadHandler.data.AsSpan());
                 return new SteamToken(response.access_token, response.refresh_token, steamToken.Username);
             }
-            catch
+            catch(Exception e)
             {
+                Debug.LogException(e);
                 return null;
             }
         }

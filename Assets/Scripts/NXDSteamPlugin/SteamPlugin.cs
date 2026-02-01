@@ -133,7 +133,7 @@ namespace NXDSteamPlugin
             qrCodeObj.GetComponent<LayoutElement>().preferredHeight = 256;
             qrCodeObj.GetComponent<LayoutElement>().preferredWidth = 256;
 
-            UpdateQRCodeImage(qrCode, beginResult.Response.ChallengeUrl);
+            UpdateQRCodeImage(qrCode, beginResult.ChallengeUrl);
 
             var id = modalService.CreateModal(new CreateModalArgs()
             {
@@ -147,9 +147,9 @@ namespace NXDSteamPlugin
                 closureCancellationToken.Cancel();
             });
 
-            Debug.Log(beginResult.Response.ChallengeUrl);
+            Debug.Log(beginResult.ChallengeUrl);
 
-            var token = await steamAuthService.AwaitLoginCompletionAsync(beginResult, (x) => UpdateQRCodeImage(qrCode, x.Response.NewChallengeUrl), cancellationToken);
+            var token = await steamAuthService.AwaitLoginCompletionAsync(beginResult, (x) => UpdateQRCodeImage(qrCode, x.NewChallengeUrl), cancellationToken);
 
             Debug.Log("Authenticated!");
             Debug.Log(token.AccessToken);
@@ -163,6 +163,9 @@ namespace NXDSteamPlugin
         {
             var result = steamAuthService.LoadValidToken();
             result = await steamAuthService.RefreshTokenAsync(result, cancellationToken);
+            if (result == null)
+                return;
+            
             steamAuthService.SaveToken(result);
         }
         

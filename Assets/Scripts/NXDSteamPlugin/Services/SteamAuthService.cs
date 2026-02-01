@@ -16,6 +16,8 @@ namespace NXDSteamPlugin.Services
         public string AccessToken { get; }
         public string SteamId { get; }
         public string Username { get; }
+        
+        public SteamToken() { }
 
         public SteamToken(string refreshToken, string accessToken, string username)
         {
@@ -63,19 +65,19 @@ namespace NXDSteamPlugin.Services
 
             while (cancellationToken.IsCancellationRequested == false)
             {
-                await UniTask.WaitForSeconds(beginLoginResponse.Response.Interval, cancellationToken: cancellationToken);
+                await UniTask.WaitForSeconds(beginLoginResponse.Interval, cancellationToken: cancellationToken);
 
-                var pollResponse = await authenticationServiceClient.PollAuthSessionStatusAsync(beginLoginResponse.Response.ClientId, beginLoginResponse.Response.RequestId, cancellationToken);
-                if (string.IsNullOrEmpty(pollResponse.Response.AccessToken) == false)
+                var pollResponse = await authenticationServiceClient.PollAuthSessionStatusAsync(beginLoginResponse.ClientId, beginLoginResponse.RequestId, cancellationToken);
+                if (string.IsNullOrEmpty(pollResponse.AccessToken) == false)
                 {
-                    tokenResponse = new SteamToken(pollResponse.Response.RefreshToken, pollResponse.Response.AccessToken, pollResponse.Response.AccountName);
+                    tokenResponse = new SteamToken(pollResponse.RefreshToken, pollResponse.AccessToken, pollResponse.AccountName);
 
                     break;
                 }
-                else if (string.IsNullOrEmpty(pollResponse.Response.NewChallengeUrl) == false)
+                else if (string.IsNullOrEmpty(pollResponse.NewChallengeUrl) == false)
                 {
-                    beginLoginResponse.Response.ChallengeUrl = pollResponse.Response.NewChallengeUrl;
-                    beginLoginResponse.Response.ClientId = pollResponse.Response.NewClientId;
+                    beginLoginResponse.ChallengeUrl = pollResponse.NewChallengeUrl;
+                    beginLoginResponse.ClientId = pollResponse.NewClientId;
                     onNewChallengeReceived?.Invoke(pollResponse);
                 }
             }
@@ -92,10 +94,9 @@ namespace NXDSteamPlugin.Services
         public void SaveToken(SteamToken token)
         {
             if(token == null) return;
+            
             var json = JsonConvert.SerializeObject(token);
             var path = Application.persistentDataPath + "/steam_token.json";
-            
-            Debug.Log($"Saving Steam Token {json} to {path}");
             
             if(Directory.Exists(Application.persistentDataPath) == false) 
                 Directory.CreateDirectory(Application.persistentDataPath);
@@ -110,9 +111,7 @@ namespace NXDSteamPlugin.Services
 
             try
             {
-                Debug.Log($"Loading Steam Token from {path}");
                 var json = File.ReadAllText(path);
-                Debug.Log($"Loaded Steam Token: {json}");
                 var token = JsonConvert.DeserializeObject<SteamToken>(json);
                 if (token == null)
                     return null;
@@ -124,7 +123,7 @@ namespace NXDSteamPlugin.Services
 
                 if (now > exp)
                 {
-                    Debug.LogWarning("Access Token is expired but no refresh implemented");
+                    Debug.LogWarning("Access Token is expired but it should have already been refreshed!");
                     return null;
                 }
 
