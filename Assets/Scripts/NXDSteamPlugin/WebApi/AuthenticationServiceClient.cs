@@ -152,7 +152,7 @@ namespace NXDSteamPlugin.WebApi
             try
             {
                 var response = Serializer.Deserialize<CAuthentication_AccessToken_GenerateForApp_Response>(webRequest.downloadHandler.data.AsSpan());
-                return new SteamToken(response.access_token, response.refresh_token, steamToken.Username);
+                return new SteamToken(response.refresh_token, response.access_token, steamToken.Username);
             }
             catch(Exception e)
             {

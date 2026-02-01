@@ -16,19 +16,21 @@ namespace NXDSteamPlugin.Services
         public string AccessToken { get; }
         public string SteamId { get; }
         public string Username { get; }
-        
-        public SteamToken() { }
+
+        public SteamToken()
+        {
+        }
 
         public SteamToken(string refreshToken, string accessToken, string username)
         {
             RefreshToken = refreshToken;
             AccessToken = accessToken;
             Username = username;
-            
+
             var payload = JObject.Parse(GetPayload());
             SteamId = payload["sub"].Value<string>();
         }
-        
+
         public string GetPayload()
         {
             var encodedPayload = AccessToken.Split('.')[1];
@@ -84,37 +86,38 @@ namespace NXDSteamPlugin.Services
 
             return tokenResponse;
         }
-        
+
         public async UniTask<SteamToken> RefreshTokenAsync(SteamToken token, CancellationToken cancellationToken = default)
         {
             var newToken = await authenticationServiceClient.GenerateAccessTokenForAppAsync(token, cancellationToken);
             return newToken;
         }
-        
+
         public void SaveToken(SteamToken token)
         {
-            if(token == null) return;
-            
+            if (token == null) return;
+
             var json = JsonConvert.SerializeObject(token);
             var path = Application.persistentDataPath + "/steam_token.json";
-            
-            if(Directory.Exists(Application.persistentDataPath) == false) 
+
+            if (Directory.Exists(Application.persistentDataPath) == false)
                 Directory.CreateDirectory(Application.persistentDataPath);
-            
+
             File.WriteAllText(path, json);
         }
 
         public SteamToken LoadValidToken()
         {
             var path = Application.persistentDataPath + "/steam_token.json";
-            if(File.Exists(path) == false) return null;
-
             try
             {
                 var json = File.ReadAllText(path);
-                var token = JsonConvert.DeserializeObject<SteamToken>(json);
-                if (token == null)
-                    return null;
+                var jObject = JObject.Parse(json);
+                var token = new SteamToken(
+                    refreshToken: jObject[nameof(SteamToken.RefreshToken)].Value<string>() ?? throw new Exception("Refresh Token is null!"),
+                    accessToken: jObject[nameof(SteamToken.AccessToken)].Value<string>() ?? throw new Exception("Access Token is null!"),
+                    username: jObject[nameof(SteamToken.Username)].Value<string>() ?? throw new Exception("Username is null!")
+                );
 
                 var payload = JObject.Parse(token.GetPayload());
                 var exp = payload["exp"].Value<long>();
@@ -129,11 +132,12 @@ namespace NXDSteamPlugin.Services
 
                 return token;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.Log("Steam: Token file not found or invalid.");
+                Debug.LogException(ex);
                 return null;
             }
         }
-
     }
 }

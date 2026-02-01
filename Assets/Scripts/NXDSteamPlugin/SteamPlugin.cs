@@ -31,11 +31,9 @@ namespace NXDSteamPlugin
         private InstallEntryService installEntryService { get; } = new();
         private UninstallEntryService uninstallEntryService { get; } = new();
 
-        public SteamPlugin()
+        public override async UniTask OnPluginLoaded()
         {
-            RefreshAuth(CancellationToken.None)
-                .GetAwaiter()
-                .GetResult();
+            await RefreshAuthAsync(CancellationToken.None);
         }
 
         public override async UniTask<ArtworkCollection> GetArtworkCollection(string entryId, CancellationToken cancellationToken)
@@ -159,7 +157,7 @@ namespace NXDSteamPlugin
             modalService.CloseModal(id);
         }
 
-        private async UniTask RefreshAuth(CancellationToken cancellationToken)
+        private async UniTask RefreshAuthAsync(CancellationToken cancellationToken)
         {
             var result = steamAuthService.LoadValidToken();
             if (result == null)
@@ -170,6 +168,7 @@ namespace NXDSteamPlugin
                 return;
             
             steamAuthService.SaveToken(result);
+            Debug.Log("Steam: Token Refreshed");
         }
         
         private void UpdateQRCodeImage(RawImage imageComponent, string url)
