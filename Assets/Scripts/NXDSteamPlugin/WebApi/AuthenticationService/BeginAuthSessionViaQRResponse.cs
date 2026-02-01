@@ -17,16 +17,16 @@ namespace NXDSteamPlugin.WebApi.AuthenticationService
         public class ResponseData
         {
             [JsonProperty("client_id")]
-            public string ClientId { get; set; }
+            public ulong ClientId { get; set; }
 
             [JsonProperty("challenge_url")]
             public string ChallengeUrl { get; set; }
 
             [JsonProperty("request_id")]
-            public string RequestId { get; set; }
+            public byte[] RequestId { get; set; }
 
             [JsonProperty("interval")]
-            public int Interval { get; set; }
+            public float Interval { get; set; }
 
             [JsonProperty("allowed_confirmations")]
             public List<AllowedConfirmation> AllowedConfirmations { get; set; }

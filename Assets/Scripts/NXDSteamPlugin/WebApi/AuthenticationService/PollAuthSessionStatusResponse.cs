@@ -23,7 +23,7 @@ namespace NXDSteamPlugin.WebApi.AuthenticationService
             public string AccountName { get; set; }
 
             [JsonProperty("new_client_id")]
-            public string NewClientId { get; set; }
+            public ulong NewClientId { get; set; }
             
             [JsonProperty("new_challenge_url")]
             public string NewChallengeUrl { get; set; }
