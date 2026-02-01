@@ -109,6 +109,9 @@ namespace NXDSteamPlugin.WebApi
             SteamToken steamToken,
             CancellationToken cancellationToken = default)
         {
+            if(steamToken == null)
+                throw new ArgumentNullException(nameof(steamToken));
+            
             // Create the protobuf request
             var request = new CAuthentication_AccessToken_GenerateForApp_Request
             {

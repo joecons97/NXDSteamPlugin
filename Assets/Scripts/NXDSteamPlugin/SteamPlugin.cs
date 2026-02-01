@@ -162,6 +162,9 @@ namespace NXDSteamPlugin
         private async UniTask RefreshAuth(CancellationToken cancellationToken)
         {
             var result = steamAuthService.LoadValidToken();
+            if (result == null)
+                return;
+            
             result = await steamAuthService.RefreshTokenAsync(result, cancellationToken);
             if (result == null)
                 return;
