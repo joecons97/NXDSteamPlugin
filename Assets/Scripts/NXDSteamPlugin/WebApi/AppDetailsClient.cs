@@ -50,7 +50,7 @@ namespace NXDSteamPlugin.WebApi
         public string ControllerSupport { get; set; }
 
         [JsonProperty("dlc")]
-        public List<int> Dlc { get; set; }
+        public List<int> Dlc { get; set; } = new();
 
         [JsonProperty("detailed_description")]
         public string DetailedDescription { get; set; }
@@ -86,16 +86,16 @@ namespace NXDSteamPlugin.WebApi
         public string ExtUserAccountNotice { get; set; }
 
         [JsonProperty("developers")]
-        public List<string> Developers { get; set; }
+        public List<string> Developers { get; set; } = new();
 
         [JsonProperty("publishers")]
-        public List<string> Publishers { get; set; }
+        public List<string> Publishers { get; set; } = new();
 
         [JsonProperty("genres")]
-        public List<GenreDto> Genres { get; set; }
+        public List<GenreDto> Genres { get; set; } = new();
 
-        [JsonProperty("screenshots")]
-        public List<ScreenshotDto> Screenshots { get; set; }
+        [JsonProperty("screenshots")] 
+        public List<ScreenshotDto> Screenshots { get; set; } = new();
 
         [JsonProperty("release_date")]
         public ReleaseDateDto ReleaseDate { get; set; }
