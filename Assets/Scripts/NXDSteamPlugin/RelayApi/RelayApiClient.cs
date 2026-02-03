@@ -14,12 +14,14 @@ namespace NXDSteamPlugin.RelayApi
         {
             var url = $"{BASE_URL}/poll?code={code}";
             
-            Debug.Log($"Polling {url}");
-            
             var request = UnityWebRequest.Get(url);
             await request.SendWebRequest().WithCancellation(cancellationToken);
             
-            return JsonConvert.DeserializeObject<PollRelayResponse>(request.downloadHandler.text);
+            if (request.result == UnityWebRequest.Result.Success)
+                return JsonConvert.DeserializeObject<PollRelayResponse>(request.downloadHandler.text);
+            
+            Debug.LogError(request.error);
+            return null;
         }
     }
 
