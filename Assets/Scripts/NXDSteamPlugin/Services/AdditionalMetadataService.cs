@@ -4,9 +4,7 @@ using System.Globalization;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using LibraryPlugin;
-using Newtonsoft.Json;
 using NXDSteamPlugin.WebApi;
-using UnityEngine;
 
 namespace NXDSteamPlugin.Services
 {
@@ -19,8 +17,6 @@ namespace NXDSteamPlugin.Services
             var data = await client.GetAppDetailsAsync(appId, cancellationToken);
             if (data == null)
                 return null;
-
-            Debug.Log(JsonConvert.SerializeObject(data));
 
             var screenshots = await data.Screenshots
                 .Select(x => UniTask.FromResult(x.PathFull)) ?? Array.Empty<string>();
