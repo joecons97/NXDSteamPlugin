@@ -93,6 +93,7 @@ namespace NXDSteamPlugin
                 list.Add(new LibraryPluginButton()
                 {
                     Name = "Authenticate",
+                    Description = "Authenticate with Steam. This is required to load your game library.",
                     Action = Authenticate
                 });
             else
@@ -108,11 +109,11 @@ namespace NXDSteamPlugin
         private async UniTask Authenticate(CancellationToken cancellationToken)
         {
             var closureCancellationToken = new CancellationTokenSource();
-            cancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, closureCancellationToken.Token).Token;
+            var linkedCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, closureCancellationToken.Token).Token;
             
             Debug.Log("Authenticating");
 
-            var code = Random.Range(0, 999999);
+            var code = Random.Range(0, 999999).ToString();
 
             var root = new GameObject("Root", typeof(RectTransform), typeof(VerticalLayoutGroup));
             root.GetComponent<VerticalLayoutGroup>().childForceExpandWidth = false;
@@ -124,7 +125,7 @@ namespace NXDSteamPlugin
             text.font = Resources.Load<Font>("NXD");
             text.fontSize = 26;
             text.supportRichText = true;
-            text.text = $"Please scan the QR below to authenticate.\n\nEnter the code:\n\n{code}\n\nwhen prompted.";
+            text.text = $"Please scan the QR below to authenticate.";
 
             var qrCodeObj = new GameObject("QRCode", typeof(RectTransform), typeof(RawImage), typeof(LayoutElement), typeof(AspectRatioFitter));
             qrCodeObj.transform.SetParent(root.transform, false);
@@ -134,7 +135,7 @@ namespace NXDSteamPlugin
             qrCodeObj.GetComponent<LayoutElement>().preferredHeight = 256;
             qrCodeObj.GetComponent<LayoutElement>().preferredWidth = 256;
 
-            UpdateQrCodeImage(qrCode, RelayApiClient.BASE_URL);
+            UpdateQrCodeImage(qrCode, RelayApiClient.GetRelayUrl(code));
 
             var id = modalService.CreateModal(new CreateModalArgs()
             {
@@ -148,7 +149,7 @@ namespace NXDSteamPlugin
                 closureCancellationToken.Cancel();
             });
 
-            var token = await steamAuthService.PollForTokenAsync(code.ToString(), closureCancellationToken.Token);
+            var token = await steamAuthService.PollForTokenAsync(code, linkedCancellationToken);
 
             Debug.Log("Authenticated!");
             
