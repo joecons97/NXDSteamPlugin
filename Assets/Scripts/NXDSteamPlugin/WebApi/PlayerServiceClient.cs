@@ -14,7 +14,7 @@ namespace NXDSteamPlugin.WebApi
             if(token == null)
                 return new();
             
-            using UnityWebRequest request = UnityWebRequest.Get("https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?access_token=" + token.AccessToken + "&steamid=" + token.SteamId + "&include_appinfo=" + includeAppInfo);
+            using UnityWebRequest request = UnityWebRequest.Get("https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=" + token.ApiKey + "&steamid=" + token.SteamId + "&include_appinfo=" + includeAppInfo);
             await request.SendWebRequest().WithCancellation(cancellationToken);
 
             var json = request.downloadHandler.text;
