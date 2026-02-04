@@ -74,14 +74,11 @@ namespace NXDSteamPlugin.RelayApi
             }
 
             var jObject = JObject.Parse(request.downloadHandler.text);
-            Debug.Log(jObject);
             var data = jObject["encryptedData"];
-            Debug.Log("\n" + data);
             if(data == null)
                 return null;
             
             var decryptedData = DecryptWithPrivateKey(data.ToString());
-            Debug.Log("\n" + decryptedData);
             
             if (request.result == UnityWebRequest.Result.Success)
                 return JsonConvert.DeserializeObject<PollRelayResponse>(decryptedData);
