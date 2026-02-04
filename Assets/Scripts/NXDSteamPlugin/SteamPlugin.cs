@@ -113,8 +113,6 @@ namespace NXDSteamPlugin
             
             Debug.Log("Authenticating");
 
-            var code = Random.Range(0, 999999).ToString();
-
             var root = new GameObject("Root", typeof(RectTransform), typeof(VerticalLayoutGroup));
             root.GetComponent<VerticalLayoutGroup>().childForceExpandWidth = false;
             root.GetComponent<VerticalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
@@ -135,7 +133,7 @@ namespace NXDSteamPlugin
             qrCodeObj.GetComponent<LayoutElement>().preferredHeight = 256;
             qrCodeObj.GetComponent<LayoutElement>().preferredWidth = 256;
 
-            UpdateQrCodeImage(qrCode, RelayApiClient.GetRelayUrl(code));
+            UpdateQrCodeImage(qrCode, RelayApiClient.GetRelayUrl());
 
             var id = modalService.CreateModal(new CreateModalArgs()
             {
@@ -149,7 +147,7 @@ namespace NXDSteamPlugin
                 closureCancellationToken.Cancel();
             });
 
-            var token = await steamAuthService.PollForTokenAsync(code, linkedCancellationToken);
+            var token = await steamAuthService.PollForTokenAsync(linkedCancellationToken);
 
             Debug.Log("Authenticated!");
             

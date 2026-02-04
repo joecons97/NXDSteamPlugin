@@ -1,8 +1,11 @@
 using System;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using NXDSteamPlugin.Extensions;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -10,34 +13,56 @@ namespace NXDSteamPlugin.RelayApi
 {
     public class RelayApiClient
     {
+        public class RelayApiClientToken
+        {
+            public RelayApiClientToken(string publicKey, string sessionToken)
+            {
+                PublicKey = publicKey;
+                SessionToken = sessionToken;
+            }
+
+            public string SessionToken { get; }
+            public string PublicKey { get; }
+        }
+        
         public const string BASE_URL = "https://nxe-steam-api-relay.pages.dev";
+        
+        private static RSACryptoServiceProvider rsa;
+        private static RelayApiClientToken cachedToken;
 
-        public static string GetRelayUrl(string randomCode)
+        public static string GetRelayUrl()
         {
-            return $"{BASE_URL}?key={GetKey(randomCode)}";
+            var token = GetToken();
+            return $"{BASE_URL}?token={token.SessionToken}&pubkey={Uri.EscapeDataString(token.PublicKey)}";
         }
 
-        private static string GetKey(string randomCode)
+        public static RelayApiClientToken GetToken()
         {
-            var deviceId = SystemInfo.deviceUniqueIdentifier;
+            if(cachedToken != null) 
+                return cachedToken;
             
-            var rawToken = deviceId + randomCode;
-            var token = BitConverter.ToString(
-                System.Security.Cryptography.SHA256.Create()
-                    .ComputeHash(Encoding.UTF8.GetBytes(rawToken))
-            ).Replace("-", "").ToLower();
+            var sessionToken = Guid.NewGuid().ToString();
+            rsa = new RSACryptoServiceProvider(2048);
             
-            return token;
-        }
+            var publicKeyPem = rsa.ExportPublicKeyToPem();
+            var publicKeyBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(publicKeyPem));
 
-        public async UniTask<PollRelayResponse?> PollRelay(string code, CancellationToken cancellationToken = default)
+            cachedToken = new RelayApiClientToken(publicKeyBase64, sessionToken);
+            
+            return cachedToken;
+        }
+        
+
+        public async UniTask<PollRelayResponse?> PollRelay(CancellationToken cancellationToken = default)
         {
-            var url = $"{BASE_URL}/poll?key={GetKey(code)}";
+            var token = GetToken();
+            var url = $"{BASE_URL}/poll?token={token.SessionToken}";
 
             var request = UnityWebRequest.Get(url);
             
             try
             {
+                Debug.Log("Polling relay");
                 await request.SendWebRequest().WithCancellation(cancellationToken);
             }
             catch (UnityWebRequestException ex)
@@ -48,19 +73,28 @@ namespace NXDSteamPlugin.RelayApi
                 return null;
             }
 
+            var jObject = JObject.Parse(request.downloadHandler.text);
+            Debug.Log(jObject);
+            var data = jObject["encryptedData"];
+            Debug.Log("\n" + data);
+            if(data == null)
+                return null;
+            
+            var decryptedData = DecryptWithPrivateKey(data.ToString());
+            Debug.Log("\n" + decryptedData);
+            
             if (request.result == UnityWebRequest.Result.Success)
-                return JsonConvert.DeserializeObject<PollRelayResponse>(request.downloadHandler.text);
+                return JsonConvert.DeserializeObject<PollRelayResponse>(decryptedData);
             
             Debug.LogError(request.error);
             return null;
         }
-    }
-
-    public class PollRelayResponse
-    {
-        [JsonProperty("apikey")]
-        public string ApiKey { get; set; }
-        [JsonProperty("userId")]
-        public string UserId { get; set; }
+        
+        private string DecryptWithPrivateKey(string encryptedBase64)
+        {
+            byte[] encryptedBytes = Convert.FromBase64String(encryptedBase64);
+            byte[] decryptedBytes = rsa.Decrypt(encryptedBytes, false); // false = PKCS#1 padding
+            return Encoding.UTF8.GetString(decryptedBytes);
+        }
     }
 }

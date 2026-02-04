@@ -25,14 +25,14 @@ namespace NXDSteamPlugin.Services
     {
         private readonly RelayApiClient relayApiClient = new();
 
-        public async UniTask<SteamToken> PollForTokenAsync(string code, CancellationToken cancellationToken)
+        public async UniTask<SteamToken> PollForTokenAsync(CancellationToken cancellationToken)
         {
             PollRelayResponse response = null;
 
             while (!cancellationToken.IsCancellationRequested && response == null)
             {            
                 await UniTask.WaitForSeconds(2, cancellationToken: cancellationToken);
-                response = await relayApiClient.PollRelay(code, cancellationToken);
+                response = await relayApiClient.PollRelay(cancellationToken);
             }
             
             return response == null 
