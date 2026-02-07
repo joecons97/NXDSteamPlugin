@@ -21,8 +21,6 @@ namespace NXDSteamPlugin
 
         public override string Description => "Steam";
 
-        public override string IconPath => "steam.png";
-
         private ModalService modalService { get; } = new();
         private ArtworkService artworkService { get; } = new();
         private StartEntryService startEntryService { get; } = new();
